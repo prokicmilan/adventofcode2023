@@ -31,7 +31,7 @@ func determineStartingPositions(desertMap map[string][2]string) []string {
 	var startingPositions []string
 
 	for position := range desertMap {
-		if position[2] == 'A' {
+		if strings.HasSuffix(position, "A") {
 			startingPositions = append(startingPositions, position)
 		}
 	}
@@ -49,14 +49,14 @@ func traverseCount(instructions string, desertMap map[string][2]string, starting
 	currentPositionKey := startingPosition
 	currentPosition := desertMap[startingPosition]
 
-	for currentPositionKey[2] != 'Z' {
+	for !strings.HasSuffix(currentPositionKey, "Z") {
 		for _, step := range instructions {
 			currentPositionKey = currentPosition[stepToIndex[step]]
 			currentPosition = desertMap[currentPositionKey]
 			// fmt.Println("currentPosition =", currentPositionKey)
 			// fmt.Println("nextPositions =", currentPosition)
 			numberOfSteps++
-			if currentPositionKey[2] == 'Z' {
+			if strings.HasSuffix(currentPositionKey, "Z") {
 				break
 			}
 		}
@@ -110,7 +110,6 @@ func main() {
 	desertMap := readMap(scanner)
 
 	fmt.Println(solve(instructions, desertMap))
-	fmt.Println(gcd(18, 84))
 
 	input.Close()
 }
