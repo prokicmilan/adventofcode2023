@@ -45,10 +45,6 @@ func determineNext(line []int64) int64 {
 	return line[0] - determineNext(nextArr)
 }
 
-func determineNextNumber(line []int64, channel chan<- int64) {
-	channel <- determineNext(line)
-}
-
 func solve(input [][]int64) int64 {
 	channels := make([]chan int64, len(input))
 	for i := 0; i < len(channels); i++ {
@@ -56,7 +52,9 @@ func solve(input [][]int64) int64 {
 	}
 	var sum int64 = 0
 	for ix, line := range input {
-		go determineNextNumber(line, channels[ix])
+		go func(ix int, line []int64) {
+			channels[ix] <- determineNext(line)
+		}(ix, line)
 	}
 	for _, channel := range channels {
 		sum += <-channel
