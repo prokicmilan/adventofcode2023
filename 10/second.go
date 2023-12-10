@@ -49,45 +49,7 @@ func checkPosition(maze []string, x, y int, direction rune, pipeSpec map[rune]ma
 	return found
 }
 
-func goToNextPosition(maze []string, currentPosition coordinates, currentDirection rune) specification {
-	pipeSpec := map[rune]map[rune]specification{
-		'|': {
-			'N': specification{
-				nextDirection: 'N', move: coordinates{x: -1, y: 0}},
-			'S': specification{
-				nextDirection: 'S', move: coordinates{x: 1, y: 0}},
-		},
-		'-': {
-			'W': specification{
-				nextDirection: 'W', move: coordinates{x: 0, y: -1}},
-			'E': specification{
-				nextDirection: 'E', move: coordinates{x: 0, y: 1}},
-		},
-		'L': {
-			'S': specification{
-				nextDirection: 'E', move: coordinates{x: 0, y: 1}},
-			'W': specification{
-				nextDirection: 'N', move: coordinates{x: -1, y: 0}},
-		},
-		'J': {
-			'E': specification{
-				nextDirection: 'N', move: coordinates{x: -1, y: 0}},
-			'S': specification{
-				nextDirection: 'W', move: coordinates{x: 0, y: -1}},
-		},
-		'7': {
-			'E': specification{
-				nextDirection: 'S', move: coordinates{x: 1, y: 0}},
-			'N': specification{
-				nextDirection: 'W', move: coordinates{x: 0, y: -1}},
-		},
-		'F': {
-			'N': specification{
-				nextDirection: 'E', move: coordinates{x: 0, y: 1}},
-			'W': specification{
-				nextDirection: 'S', move: coordinates{x: 1, y: 0}},
-		},
-	}
+func goToNextPosition(maze []string, currentPosition coordinates, currentDirection rune, pipeSpec map[rune]map[rune]specification) specification {
 	currentPipeSymbol := maze[currentPosition.x][currentPosition.y]
 	if currentPipeSymbol == 'S' {
 		// this is the first step, we need to find the first valid position we can go to
@@ -130,6 +92,44 @@ func initializeMazeWithLoop(maze []string) []string {
 }
 
 func determineLoop(maze []string) []string {
+	pipeSpec := map[rune]map[rune]specification{
+		'|': {
+			'N': specification{
+				nextDirection: 'N', move: coordinates{x: -1, y: 0}},
+			'S': specification{
+				nextDirection: 'S', move: coordinates{x: 1, y: 0}},
+		},
+		'-': {
+			'W': specification{
+				nextDirection: 'W', move: coordinates{x: 0, y: -1}},
+			'E': specification{
+				nextDirection: 'E', move: coordinates{x: 0, y: 1}},
+		},
+		'L': {
+			'S': specification{
+				nextDirection: 'E', move: coordinates{x: 0, y: 1}},
+			'W': specification{
+				nextDirection: 'N', move: coordinates{x: -1, y: 0}},
+		},
+		'J': {
+			'E': specification{
+				nextDirection: 'N', move: coordinates{x: -1, y: 0}},
+			'S': specification{
+				nextDirection: 'W', move: coordinates{x: 0, y: -1}},
+		},
+		'7': {
+			'E': specification{
+				nextDirection: 'S', move: coordinates{x: 1, y: 0}},
+			'N': specification{
+				nextDirection: 'W', move: coordinates{x: 0, y: -1}},
+		},
+		'F': {
+			'N': specification{
+				nextDirection: 'E', move: coordinates{x: 0, y: 1}},
+			'W': specification{
+				nextDirection: 'S', move: coordinates{x: 1, y: 0}},
+		},
+	}
 	mazeWithLoop := initializeMazeWithLoop(maze)
 
 	startingPosition := findStartingPosition(maze)
@@ -137,13 +137,13 @@ func determineLoop(maze []string) []string {
 	mazeWithLoop[startingPosition.x] = currentLine[:startingPosition.y] + "S" + currentLine[startingPosition.y+1:]
 	currentPosition := startingPosition
 
-	moveSpec := goToNextPosition(maze, currentPosition, 'A')
+	moveSpec := goToNextPosition(maze, currentPosition, 'A', pipeSpec)
 	currentDirection := moveSpec.nextDirection
 	currentPosition = moveSpec.move
 	for maze[currentPosition.x][currentPosition.y] != 'S' {
 		currentLine = mazeWithLoop[currentPosition.x]
 		mazeWithLoop[currentPosition.x] = currentLine[:currentPosition.y] + string(maze[currentPosition.x][currentPosition.y]) + currentLine[currentPosition.y+1:]
-		nextPositionSpecification := goToNextPosition(maze, currentPosition, currentDirection)
+		nextPositionSpecification := goToNextPosition(maze, currentPosition, currentDirection, pipeSpec)
 		currentPosition = nextPositionSpecification.move
 		currentDirection = nextPositionSpecification.nextDirection
 	}
@@ -157,12 +157,8 @@ If the number of vertical segments is odd, the symbol is in loop
 L followed by 7 and F followed by J are considered vertical segments (even if they are separated by a number of horizontal segments),
 so we need to keep track if any of these show up and are not broken by . | or non-matching segment
 */
-func isInLoop(line string, symbolPosition int) bool {
+func isInLoop(line string, symbolPosition int, verticalSegmentFollowers map[rune]rune) bool {
 	numberOfVerticalSegments := 0
-	verticalSegmentFollowers := map[rune]rune{
-		'L': '7',
-		'F': 'J',
-	}
 
 	previousVerticalSegment := '0'
 	for _, character := range line[symbolPosition+1:] {
@@ -186,11 +182,15 @@ func isInLoop(line string, symbolPosition int) bool {
 }
 
 func countEnclosedTiles(maze []string) int {
+	verticalSegmentFollowers := map[rune]rune{
+		'L': '7',
+		'F': 'J',
+	}
 	enclosedCount := 0
 	for _, line := range maze {
 		lineCount := 0
 		for symbolPosition, symbol := range line {
-			if symbol == '.' && isInLoop(line, symbolPosition) {
+			if symbol == '.' && isInLoop(line, symbolPosition, verticalSegmentFollowers) {
 				lineCount++
 			}
 		}

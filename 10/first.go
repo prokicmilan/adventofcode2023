@@ -48,7 +48,38 @@ func checkPosition(maze []string, x, y int, direction rune, pipeSpec map[rune]ma
 	return found
 }
 
-func goToNextPosition(maze []string, currentPosition coordinates, currentDirection rune) specification {
+func goToNextPosition(maze []string, currentPosition coordinates, currentDirection rune, pipeSpec map[rune]map[rune]specification) specification {
+	currentPipeSymbol := maze[currentPosition.x][currentPosition.y]
+	if currentPipeSymbol == 'S' {
+		// this is the first step, we need to find the first valid position we can go to
+		// we're going to check all sides - up, right, down, left (N, W, S, E)
+		directionsToCheck := []specification{
+			{nextDirection: 'N', move: coordinates{x: -1, y: 0}},
+			{nextDirection: 'E', move: coordinates{x: 0, y: 1}},
+			{nextDirection: 'S', move: coordinates{x: 1, y: 0}},
+			{nextDirection: 'W', move: coordinates{x: 0, y: -1}},
+		}
+
+		for _, directionToCheck := range directionsToCheck {
+			newX := currentPosition.x + directionToCheck.move.x
+			newY := currentPosition.y + directionToCheck.move.y
+			if checkPosition(maze, currentPosition.x+directionToCheck.move.x, currentPosition.y+directionToCheck.move.y, directionToCheck.nextDirection, pipeSpec) {
+				return specification{
+					nextDirection: directionToCheck.nextDirection,
+					move:          coordinates{x: newX, y: newY},
+				}
+			}
+		}
+	}
+
+	moveSpec := pipeSpec[rune(currentPipeSymbol)][currentDirection]
+	return specification{
+		nextDirection: moveSpec.nextDirection,
+		move:          coordinates{x: currentPosition.x + moveSpec.move.x, y: currentPosition.y + moveSpec.move.y},
+	}
+}
+
+func determineLoopLength(maze []string) int {
 	pipeSpec := map[rune]map[rune]specification{
 		'|': {
 			'N': specification{
@@ -87,49 +118,18 @@ func goToNextPosition(maze []string, currentPosition coordinates, currentDirecti
 				nextDirection: 'S', move: coordinates{x: 1, y: 0}},
 		},
 	}
-	currentPipeSymbol := maze[currentPosition.x][currentPosition.y]
-	if currentPipeSymbol == 'S' {
-		// this is the first step, we need to find the first valid position we can go to
-		// we're going to check all sides - up, right, down, left (N, W, S, E)
-		directionsToCheck := []specification{
-			{nextDirection: 'N', move: coordinates{x: -1, y: 0}},
-			{nextDirection: 'E', move: coordinates{x: 0, y: 1}},
-			{nextDirection: 'S', move: coordinates{x: 1, y: 0}},
-			{nextDirection: 'W', move: coordinates{x: 0, y: -1}},
-		}
-
-		for _, directionToCheck := range directionsToCheck {
-			newX := currentPosition.x + directionToCheck.move.x
-			newY := currentPosition.y + directionToCheck.move.y
-			if checkPosition(maze, currentPosition.x+directionToCheck.move.x, currentPosition.y+directionToCheck.move.y, directionToCheck.nextDirection, pipeSpec) {
-				return specification{
-					nextDirection: directionToCheck.nextDirection,
-					move:          coordinates{x: newX, y: newY},
-				}
-			}
-		}
-	}
-
-	moveSpec := pipeSpec[rune(currentPipeSymbol)][currentDirection]
-	return specification{
-		nextDirection: moveSpec.nextDirection,
-		move:          coordinates{x: currentPosition.x + moveSpec.move.x, y: currentPosition.y + moveSpec.move.y},
-	}
-}
-
-func determineLoopLength(maze []string) int {
 	loopLength := 0
 	startingPosition := findStartingPosition(maze)
 	currentPosition := startingPosition
 
-	moveSpec := goToNextPosition(maze, currentPosition, 'A')
+	moveSpec := goToNextPosition(maze, currentPosition, 'A', pipeSpec)
 	currentDirection := moveSpec.nextDirection
 	currentPosition = moveSpec.move
 	loopLength++
 	for maze[currentPosition.x][currentPosition.y] != 'S' {
 		loopLength++
 		// fmt.Println("(", currentDirection, ")", currentPosition.x, ":", currentPosition.y, "->", string(maze[currentPosition.x][currentPosition.y]))
-		nextPositionSpecification := goToNextPosition(maze, currentPosition, currentDirection)
+		nextPositionSpecification := goToNextPosition(maze, currentPosition, currentDirection, pipeSpec)
 		currentPosition = nextPositionSpecification.move
 		currentDirection = nextPositionSpecification.nextDirection
 	}
