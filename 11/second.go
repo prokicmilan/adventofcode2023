@@ -4,77 +4,15 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-
-	"gonum.org/v1/gonum/stat/combin"
 )
 
 const EMPTY_FIELD = '.'
 const GALAXY_FIELD = '#'
 const UNIVERSE_GROWTH_FACTOR uint64 = 1000000
 
-func readUniverse(input *os.File) ([][]rune, []int, []int) {
-	var emptyRows map[int]bool = make(map[int]bool)
-	var emptyColumnCandidates []bool
-	var universe [][]rune
-
-	scanner := bufio.NewScanner(input)
-
-	rowCount := 0
-	for scanner.Scan() {
-		line := scanner.Text()
-		universeRow := make([]rune, len(line))
-		if len(emptyColumnCandidates) == 0 {
-			emptyColumnCandidates = make([]bool, len(line))
-			for i := 0; i < len(line); i++ {
-				emptyColumnCandidates[i] = true
-			}
-		}
-		allEmpty := true
-		for ix, character := range line {
-			if character != EMPTY_FIELD {
-				emptyColumnCandidates[ix] = false
-				allEmpty = false
-			}
-			universeRow[ix] = character
-		}
-		if allEmpty {
-			emptyRows[rowCount] = true
-		}
-		rowCount++
-		universe = append(universe, universeRow)
-	}
-	emptyRowIndexes := make([]int, 0, len(emptyRows))
-	for k, v := range emptyRows {
-		if v {
-			emptyRowIndexes = append(emptyRowIndexes, k)
-		}
-	}
-	var emptyColumnIndexes []int
-	for ix := range emptyColumnCandidates {
-		if emptyColumnCandidates[ix] {
-			emptyColumnIndexes = append(emptyColumnIndexes, ix)
-		}
-	}
-
-	return universe, emptyRowIndexes, emptyColumnIndexes
-}
-
 type coordinates struct {
 	row    int
 	column int
-}
-
-func findGalaxyPositions(universe [][]rune) []coordinates {
-	var result []coordinates
-	for universeRowIx, universeRow := range universe {
-		for universeColIx, universePoint := range universeRow {
-			if universePoint == GALAXY_FIELD {
-				result = append(result, coordinates{row: universeRowIx, column: universeColIx})
-			}
-		}
-	}
-
-	return result
 }
 
 func countEmptyLinesCrossed(lowerBound, upperBound int, emptyLineIndexes []int) uint64 {
@@ -97,28 +35,47 @@ func calculateDistanceBetweenGalaxies(galaxyA, galaxyB coordinates, emptyRowInde
 	return uint64(smallDistance) + (emptyRowsCrossed+emptyColumnsCrossed)*(UNIVERSE_GROWTH_FACTOR-1)
 }
 
-func solve(universe [][]rune, emptyRows []int, emptyColumns []int) uint64 {
-	galaxyPositions := findGalaxyPositions(universe)
-	var channels []chan uint64 = make([]chan uint64, combin.Binomial(len(galaxyPositions), 2))
-	for i := 0; i < len(channels); i++ {
-		channels[i] = make(chan uint64)
-	}
+func solve(input *os.File) uint64 {
+	scanner := bufio.NewScanner(input)
+	var galaxyPositions []coordinates
+	var emptyRows []int
+	var emptyColumnCandidates []bool
 
-	channelCount := 0
-	for i := 0; i < len(galaxyPositions); i++ {
-		for j := i + 1; j < len(galaxyPositions); j++ {
-			go func(ii, jj, cc int) {
-				channels[cc] <- calculateDistanceBetweenGalaxies(galaxyPositions[ii], galaxyPositions[jj], emptyRows, emptyColumns)
-			}(i, j, channelCount)
-			channelCount++
+	row := 0
+	for scanner.Scan() {
+		line := scanner.Text()
+		if len(emptyColumnCandidates) == 0 {
+			emptyColumnCandidates = make([]bool, len(line))
+			for i := 0; i < len(emptyColumnCandidates); i++ {
+				emptyColumnCandidates[i] = true
+			}
+		}
+
+		emptyRow := true
+		for ix, character := range line {
+			if character == GALAXY_FIELD {
+				galaxyPositions = append(galaxyPositions, coordinates{row: row, column: ix})
+				emptyRow = false
+				emptyColumnCandidates[ix] = false
+			}
+		}
+		if emptyRow {
+			emptyRows = append(emptyRows, row)
+		}
+		row++
+	}
+	var emptyColumns []int
+	for ix := range emptyColumnCandidates {
+		if emptyColumnCandidates[ix] {
+			emptyColumns = append(emptyColumns, ix)
 		}
 	}
 
 	var sum uint64 = 0
-	for _, channel := range channels {
-		distance := <-channel
-		// fmt.Println(distance)
-		sum += distance
+	for i := 0; i < len(galaxyPositions); i++ {
+		for j := i + 1; j < len(galaxyPositions); j++ {
+			sum += calculateDistanceBetweenGalaxies(galaxyPositions[i], galaxyPositions[j], emptyRows, emptyColumns)
+		}
 	}
 
 	return sum
@@ -126,17 +83,6 @@ func solve(universe [][]rune, emptyRows []int, emptyColumns []int) uint64 {
 
 func main() {
 	input, _ := os.Open("input")
-
-	universe, emptyRows, emptyColumns := readUniverse(input)
-	input.Close()
-	fmt.Println(solve(universe, emptyRows, emptyColumns))
-}
-
-func printUniverse(universe [][]rune) {
-	for _, universeRow := range universe {
-		for _, universeChar := range universeRow {
-			fmt.Print(string(universeChar))
-		}
-		fmt.Println()
-	}
+	defer input.Close()
+	fmt.Println(solve(input))
 }
