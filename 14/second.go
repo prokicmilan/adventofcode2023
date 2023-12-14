@@ -105,7 +105,7 @@ func cycle(puzzle [][]rune) [][]rune {
 	return puzzle
 }
 
-func solve(puzzle [][]rune) uint64 {
+func calculateLoad(puzzle [][]rune) uint64 {
 	var sum uint64 = 0
 
 	for rowIx, line := range puzzle {
@@ -137,7 +137,6 @@ func main() {
 		puzzle = append(puzzle, scanner.Text())
 	}
 	puzzleRunes := convert(puzzle)
-	// fmt.Println(solve(puzzleRunes))
 	puzzleRunes = cycle(puzzleRunes)
 	cache := make(map[string]int)
 	stringified := convertToString(puzzleRunes)
@@ -166,5 +165,5 @@ func main() {
 		puzzleRunes = cycle(puzzleRunes)
 	}
 
-	fmt.Println(solve(puzzleRunes))
+	fmt.Println(calculateLoad(puzzleRunes))
 }
