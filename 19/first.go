@@ -84,10 +84,10 @@ func evaluateCondition(condition Condition, categoryRating int) bool {
 
 func processWorkflow(workflow Workflow, item map[string]int) string {
 	conditionCounter := map[string]int{
-		"a": -1,
-		"m": -1,
-		"s": -1,
 		"x": -1,
+		"m": -1,
+		"a": -1,
+		"s": -1,
 	}
 	for _, conditionKey := range workflow.conditionKeys {
 		conditionCounter[conditionKey]++
