@@ -222,6 +222,20 @@ func main() {
 	modules := initializeModules(scanner)
 
 	cnt := 0
+
+	/*
+		Cheat: investigating the input reveals the following structure:
+								rx
+					|		|		|		|
+					zm		pl		mz		lz (all conjuction)
+					|		|		|		|
+					nl		qt		dq		vt (all conjuction)
+					|		|		|		|
+					...		...		...		...
+
+		Determining the cycle for each of the second layer conjuction modules allows you
+		to determine the number of button presses necessary as lcm(nl, qt, dq, vt)
+	*/
 	targetCounts := map[string]int{
 		"nl": 0,
 		"qt": 0,
