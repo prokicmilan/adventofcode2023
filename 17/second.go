@@ -118,6 +118,14 @@ func findShortestPath(maze [][]uint8, start, end Coordinates) uint64 {
 			},
 			weight: 0,
 		},
+		PQItem{
+			state: State{
+				location:       start,
+				direction:      'S',
+				directionSteps: 0,
+			},
+			weight: 0,
+		},
 	}
 	heap.Init(&priorityQueue)
 	var currentNode PQItem
@@ -135,7 +143,6 @@ func findShortestPath(maze [][]uint8, start, end Coordinates) uint64 {
 		}
 	}
 
-	fmt.Println(currentNode.state.directionSteps)
 	return currentNode.weight
 }
 
